@@ -32,7 +32,9 @@ class _SphFormScreenState extends ConsumerState<SphFormScreen> {
     if (widget.sphId != null) {
       _loadSph();
     } else {
-      ref.read(sphFormProvider.notifier).reset();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(sphFormProvider.notifier).reset();
+      });
     }
     _ppnController.text = '11';
   }
@@ -484,10 +486,9 @@ class _SphFormScreenState extends ConsumerState<SphFormScreen> {
                           for (int i = 0; i < materials.length; i++) {
                             if (selected[i]) {
                               final m = materials[i];
-                              notifier.addItem(sectionIndex, m.name);
+                              final newIndex = notifier.addItem(sectionIndex, m.name);
                               final items = ref2.read(sphFormProvider).items;
-                              final lastIndex = items.length - 1;
-                              notifier.updateItem(lastIndex, items[lastIndex].copyWith(
+                              notifier.updateItem(newIndex, items[newIndex].copyWith(
                                 unit: m.unit,
                                 materialPrice: m.standardPrice,
                               ));

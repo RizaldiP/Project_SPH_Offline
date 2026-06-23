@@ -124,17 +124,23 @@ class SphFormNotifier extends StateNotifier<SphFormState> {
     state = state.copyWith(items: items);
   }
 
-  void addItem(int sectionIndex, String label) {
+  int addItem(int sectionIndex, String label) {
     final items = List<SphItem>.from(state.items);
     final section = items[sectionIndex];
-    items.add(SphItem(
+    var insertAt = sectionIndex + 1;
+    while (insertAt < items.length && items[insertAt].type == 'item') {
+      insertAt++;
+    }
+    final newItem = SphItem(
       sphId: state.sphId ?? 0,
       type: 'item',
       label: label,
       parentId: section.id,
       sortOrder: items.length,
-    ));
+    );
+    items.insert(insertAt, newItem);
     state = state.copyWith(items: items);
+    return insertAt;
   }
 
   void updateItem(int index, SphItem item) {
