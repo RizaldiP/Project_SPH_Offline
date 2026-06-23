@@ -262,10 +262,10 @@ class _SphFormScreenState extends ConsumerState<SphFormScreen> {
                           final isCollapsed = _collapsed.contains(index);
                           final numberPrefix = _computeNumber(formState.items, index);
                           if (item.type == 'item' && _isParentCollapsed(formState.items, index)) {
-                            return const SizedBox.shrink();
+                            return SizedBox.shrink(key: ValueKey('hidden_$index'));
                           }
                           return _SphItemCard(
-                            key: ValueKey(item.sortOrder),
+                            key: ValueKey('item_$index'),
                             numberPrefix: numberPrefix,
                             item: item,
                             index: index,
@@ -395,6 +395,14 @@ class _SphFormScreenState extends ConsumerState<SphFormScreen> {
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.inventory, size: 18),
+            label: const Text('Ambil dari Material'),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _showMaterialPickerDialog(context, sectionIndex);
+            },
+          ),
           FilledButton(
             onPressed: () {
               if (controller.text.isNotEmpty) {
@@ -405,6 +413,100 @@ class _SphFormScreenState extends ConsumerState<SphFormScreen> {
             child: const Text('Tambah'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showMaterialPickerDialog(BuildContext context, int sectionIndex) {
+    final notifier = ref.read(sphFormProvider.notifier);
+    showDialog(
+      context: context,
+      builder: (ctx) => Consumer(
+        builder: (ctx2, ref2, _) {
+          final materialsAsync = ref2.watch(materialsProvider);
+          return materialsAsync.when(
+            data: (materials) {
+              final selected = List<bool>.filled(materials.length, false);
+              final searchController = TextEditingController();
+              return StatefulBuilder(
+                builder: (ctx3, setInnerState) {
+                  final query = searchController.text.toLowerCase();
+                  final filtered = materials.where((m) =>
+                    m.name.toLowerCase().contains(query) ||
+                    (m.category?.toLowerCase() ?? '').contains(query),
+                  ).toList();
+                  return AlertDialog(
+                    title: const Text('Pilih Material'),
+                    content: SizedBox(
+                      width: double.maxFinite,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextField(
+                            controller: searchController,
+                            decoration: const InputDecoration(
+                              hintText: 'Cari material...',
+                              prefixIcon: Icon(Icons.search),
+                              isDense: true,
+                            ),
+                            onChanged: (_) => setInnerState(() {}),
+                          ),
+                          const SizedBox(height: 8),
+                          Expanded(
+                            child: ListView.builder(
+                              shrinkWrap: true,
+                              itemCount: filtered.length,
+                              itemBuilder: (ctx4, i) {
+                                final material = filtered[i];
+                                final originalIndex = materials.indexOf(material);
+                                return CheckboxListTile(
+                                  dense: true,
+                                  title: Text(material.name, style: const TextStyle(fontSize: 14)),
+                                  subtitle: Text(
+                                    '${material.unit ?? "-"} | ${Helpers.formatCurrency(material.standardPrice)}',
+                                    style: const TextStyle(fontSize: 11, color: AppTheme.darkGray),
+                                  ),
+                                  value: selected[originalIndex],
+                                  onChanged: (v) => setInnerState(() => selected[originalIndex] = v ?? false),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(ctx3), child: const Text('Batal')),
+                      FilledButton(
+                        onPressed: () {
+                          final count = selected.where((s) => s).length;
+                          if (count == 0) return;
+                          for (int i = 0; i < materials.length; i++) {
+                            if (selected[i]) {
+                              final m = materials[i];
+                              notifier.addItem(sectionIndex, m.name);
+                              final items = ref2.read(sphFormProvider).items;
+                              final lastIndex = items.length - 1;
+                              notifier.updateItem(lastIndex, items[lastIndex].copyWith(
+                                unit: m.unit,
+                                materialPrice: m.standardPrice,
+                              ));
+                            }
+                          }
+                          notifier.calculateTotals();
+                          Navigator.pop(ctx3);
+                        },
+                        child: Text('Import ${selected.where((s) => s).length}'),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+            error: (_, _) => const AlertDialog(content: Text('Gagal memuat material')),
+            loading: () => const AlertDialog(content: Center(child: CircularProgressIndicator())),
+          );
+        },
       ),
     );
   }
