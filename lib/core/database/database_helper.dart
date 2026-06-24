@@ -25,10 +25,57 @@ class DatabaseHelper {
       path,
       version: AppConstants.dbVersion,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
   Future<void> _onCreate(Database db, int version) async {
+    await _createAllTables(db);
+    await db.insert('settings', {
+      'company_name': 'Perusahaan Saya',
+      'address': '',
+      'phone': '',
+      'email': '',
+      'website': '',
+      'default_ppn': '11',
+    });
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('ALTER TABLE settings ADD COLUMN signature_name TEXT');
+      await db.execute('ALTER TABLE settings ADD COLUMN signature_position TEXT');
+      await db.execute('ALTER TABLE settings ADD COLUMN notes TEXT');
+
+      await db.execute('''
+        CREATE TABLE master_template (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          file_name TEXT NOT NULL,
+          file_path TEXT NOT NULL,
+          sheet_name TEXT DEFAULT 'Sheet1',
+          is_active INTEGER DEFAULT 1,
+          created_at TEXT,
+          updated_at TEXT
+        )
+      ''');
+
+      await db.execute('''
+        CREATE TABLE cell_mapping (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          field_name TEXT NOT NULL,
+          cell_address TEXT,
+          is_table_field INTEGER DEFAULT 0,
+          table_start_row INTEGER,
+          table_column TEXT,
+          prototype_row INTEGER
+        )
+      ''');
+
+      await _insertDefaultMappings(db);
+    }
+  }
+
+  Future<void> _createAllTables(Database db) async {
     await db.execute('''
       CREATE TABLE settings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -146,14 +193,61 @@ class DatabaseHelper {
       )
     ''');
 
-    await db.insert('settings', {
-      'company_name': 'Perusahaan Saya',
-      'address': '',
-      'phone': '',
-      'email': '',
-      'website': '',
-      'default_ppn': '11',
-    });
+    await db.execute('''
+      CREATE TABLE master_template (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        file_name TEXT NOT NULL,
+        file_path TEXT NOT NULL,
+        sheet_name TEXT DEFAULT 'Sheet1',
+        is_active INTEGER DEFAULT 1,
+        created_at TEXT,
+        updated_at TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE cell_mapping (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        field_name TEXT NOT NULL,
+        cell_address TEXT,
+        is_table_field INTEGER DEFAULT 0,
+        table_start_row INTEGER,
+        table_column TEXT,
+        prototype_row INTEGER
+      )
+    ''');
+
+    await _insertDefaultMappings(db);
+  }
+
+  Future<void> _insertDefaultMappings(Database db) async {
+    final headerFields = [
+      'sph_number', 'sph_date', 'perihal',
+      'customer_name', 'customer_company', 'customer_address', 'ship_name',
+      'validity_period', 'notes',
+      'total_material', 'total_jasa', 'subtotal', 'discount', 'ppn', 'grand_total', 'terbilang',
+      'sign_name', 'sign_position',
+    ];
+    for (final field in headerFields) {
+      await db.insert('cell_mapping', {
+        'field_name': field,
+        'is_table_field': 0,
+      });
+    }
+
+    final tableFields = [
+      'table_label', 'table_qty', 'table_unit', 'table_unit_price',
+      'table_material', 'table_jasa', 'table_amount',
+    ];
+    for (final field in tableFields) {
+      await db.insert('cell_mapping', {
+        'field_name': field,
+        'is_table_field': 1,
+        'table_start_row': null,
+        'table_column': null,
+        'prototype_row': null,
+      });
+    }
   }
 
   Future<int> getSphCount() async {

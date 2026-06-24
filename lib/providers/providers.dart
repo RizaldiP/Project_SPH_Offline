@@ -10,6 +10,7 @@ import '../services/material_repository.dart';
 import '../services/sph_repository.dart';
 import '../services/template_repository.dart';
 import '../services/settings_repository.dart';
+import '../services/master_template_repository.dart';
 
 final customerRepositoryProvider = Provider<CustomerRepository>((ref) {
   return CustomerRepository();
@@ -31,6 +32,10 @@ final settingsRepositoryProvider = Provider<SettingsRepository>((ref) {
   return SettingsRepository();
 });
 
+final masterTemplateRepositoryProvider = Provider<MasterTemplateRepository>((ref) {
+  return MasterTemplateRepository();
+});
+
 final customersProvider = FutureProvider<List<Customer>>((ref) async {
   return ref.read(customerRepositoryProvider).getAll();
 });
@@ -45,6 +50,14 @@ final templatesProvider = FutureProvider<List<SphTemplate>>((ref) async {
 
 final settingsProvider = FutureProvider<CompanySettings>((ref) async {
   return ref.read(settingsRepositoryProvider).get();
+});
+
+final masterTemplateProvider = FutureProvider<MasterTemplate?>((ref) async {
+  return ref.read(masterTemplateRepositoryProvider).getActive();
+});
+
+final cellMappingsProvider = FutureProvider<List<CellMapping>>((ref) async {
+  return ref.read(masterTemplateRepositoryProvider).getAllMappings();
 });
 
 final sphListProvider = FutureProvider.family<List<Sph>, String?>((ref, status) async {

@@ -1,7 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/providers.dart';
+import 'master_template_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -18,6 +22,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   late TextEditingController _websiteController;
   late TextEditingController _npwpController;
   late TextEditingController _ppnController;
+  late TextEditingController _signNameController;
+  late TextEditingController _signPositionController;
+  late TextEditingController _notesController;
 
   @override
   void initState() {
@@ -29,6 +36,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _websiteController = TextEditingController();
     _npwpController = TextEditingController();
     _ppnController = TextEditingController(text: '11');
+    _signNameController = TextEditingController();
+    _signPositionController = TextEditingController();
+    _notesController = TextEditingController();
     _load();
   }
 
@@ -41,6 +51,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _websiteController.text = settings.website ?? '';
     _npwpController.text = settings.npwp ?? '';
     _ppnController.text = settings.defaultPpn;
+    _signNameController.text = settings.signatureName ?? '';
+    _signPositionController.text = settings.signaturePosition ?? '';
+    _notesController.text = settings.notes ?? '';
   }
 
   @override
@@ -52,6 +65,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _websiteController.dispose();
     _npwpController.dispose();
     _ppnController.dispose();
+    _signNameController.dispose();
+    _signPositionController.dispose();
+    _notesController.dispose();
     super.dispose();
   }
 
@@ -66,6 +82,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       website: _websiteController.text,
       npwp: _npwpController.text,
       defaultPpn: _ppnController.text,
+      signatureName: _signNameController.text,
+      signaturePosition: _signPositionController.text,
+      notes: _notesController.text,
     ));
     ref.invalidate(settingsProvider);
     if (mounted) {
@@ -101,6 +120,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 12),
             TextField(controller: _npwpController, decoration: const InputDecoration(labelText: 'NPWP (Opsional)')),
             const SizedBox(height: 24),
+            const Text('Tanda Tangan', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            TextField(controller: _signNameController, decoration: const InputDecoration(labelText: 'Nama Penanggung Jawab')),
+            const SizedBox(height: 12),
+            TextField(controller: _signPositionController, decoration: const InputDecoration(labelText: 'Jabatan')),
+            const SizedBox(height: 24),
             const Text('Pengaturan Default', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             TextField(
@@ -108,8 +133,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               decoration: const InputDecoration(labelText: 'PPN Default (%)'),
               keyboardType: TextInputType.number,
             ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _notesController,
+              decoration: const InputDecoration(labelText: 'Catatan Penawaran (default)'),
+              maxLines: 3,
+            ),
             const SizedBox(height: 24),
-            const Text('Logo & Tanda Tangan', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text('Template & Ekspor', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.description, color: AppTheme.navyBlue),
+                title: const Text('Master Template'),
+                subtitle: const Text('Atur template Excel & posisi data'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () async {
+                  await Navigator.push(context, MaterialPageRoute(
+                    builder: (_) => const MasterTemplateScreen(),
+                  ));
+                },
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text('Logo & Tanda Tangan Digital', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             Card(
               child: ListTile(
@@ -117,8 +164,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 title: const Text('Logo Perusahaan'),
                 subtitle: const Text('Tap untuk mengganti'),
                 trailing: const Icon(Icons.upload),
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fitur akan datang di update berikutnya')));
+                onTap: () async {
+                  final result = await _pickImage();
+                  if (result != null) {
+                    final repo = ref.read(settingsRepositoryProvider);
+                    final current = await repo.get();
+                    await repo.update(current.copyWith(logoPath: result));
+                    ref.invalidate(settingsProvider);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Logo berhasil diperbarui')));
+                    }
+                  }
                 },
               ),
             ),
@@ -128,8 +184,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 title: const Text('Tanda Tangan Digital'),
                 subtitle: const Text('Tap untuk mengganti'),
                 trailing: const Icon(Icons.upload),
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fitur akan datang di update berikutnya')));
+                onTap: () async {
+                  final result = await _pickImage();
+                  if (result != null) {
+                    final repo = ref.read(settingsRepositoryProvider);
+                    final current = await repo.get();
+                    await repo.update(current.copyWith(signaturePath: result));
+                    ref.invalidate(settingsProvider);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tanda tangan berhasil diperbarui')));
+                    }
+                  }
                 },
               ),
             ),
@@ -139,8 +204,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 title: const Text('Stempel Digital'),
                 subtitle: const Text('Tap untuk mengganti'),
                 trailing: const Icon(Icons.upload),
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fitur akan datang di update berikutnya')));
+                onTap: () async {
+                  final result = await _pickImage();
+                  if (result != null) {
+                    final repo = ref.read(settingsRepositoryProvider);
+                    final current = await repo.get();
+                    await repo.update(current.copyWith(stampPath: result));
+                    ref.invalidate(settingsProvider);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Stempel berhasil diperbarui')));
+                    }
+                  }
                 },
               ),
             ),
@@ -148,5 +222,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       ),
     );
+  }
+
+  Future<String?> _pickImage() async {
+    try {
+      final imagePicker = ImagePicker();
+      final result = await imagePicker.pickImage(source: ImageSource.gallery);
+      if (result == null) return null;
+      final appDir = await getApplicationDocumentsDirectory();
+      final fileName = result.name;
+      final destPath = '${appDir.path}/$fileName';
+      await File(result.path).copy(destPath);
+      return destPath;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memilih gambar: $e')),
+        );
+      }
+      return null;
+    }
   }
 }

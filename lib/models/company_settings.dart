@@ -12,6 +12,9 @@ class CompanySettings {
   final String defaultPpn;
   final String sphNumberFormat;
   final String currency;
+  final String? signatureName;
+  final String? signaturePosition;
+  final String? notes;
 
   CompanySettings({
     this.id = 0,
@@ -27,6 +30,9 @@ class CompanySettings {
     this.defaultPpn = '11',
     this.sphNumberFormat = 'SPH-YYYY-NNN',
     this.currency = 'Rp',
+    this.signatureName,
+    this.signaturePosition,
+    this.notes,
   });
 
   Map<String, dynamic> toMap() {
@@ -44,6 +50,9 @@ class CompanySettings {
       'default_ppn': defaultPpn,
       'sph_number_format': sphNumberFormat,
       'currency': currency,
+      'signature_name': signatureName,
+      'signature_position': signaturePosition,
+      'notes': notes,
     };
   }
 
@@ -62,6 +71,9 @@ class CompanySettings {
       defaultPpn: map['default_ppn'] as String? ?? '11',
       sphNumberFormat: map['sph_number_format'] as String? ?? 'SPH-YYYY-NNN',
       currency: map['currency'] as String? ?? 'Rp',
+      signatureName: map['signature_name'] as String?,
+      signaturePosition: map['signature_position'] as String?,
+      notes: map['notes'] as String?,
     );
   }
 
@@ -79,6 +91,9 @@ class CompanySettings {
     String? defaultPpn,
     String? sphNumberFormat,
     String? currency,
+    String? signatureName,
+    String? signaturePosition,
+    String? notes,
   }) {
     return CompanySettings(
       id: id ?? this.id,
@@ -94,6 +109,9 @@ class CompanySettings {
       defaultPpn: defaultPpn ?? this.defaultPpn,
       sphNumberFormat: sphNumberFormat ?? this.sphNumberFormat,
       currency: currency ?? this.currency,
+      signatureName: signatureName ?? this.signatureName,
+      signaturePosition: signaturePosition ?? this.signaturePosition,
+      notes: notes ?? this.notes,
     );
   }
 }

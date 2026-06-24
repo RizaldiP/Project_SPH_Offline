@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -45,27 +46,33 @@ class PdfService {
 
       pdf.addPage(
         pw.MultiPage(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(32),
+          pageFormat: PdfPageFormat.a4.landscape,
+          margin: const pw.EdgeInsets.all(24),
           build: (context) => [
             _buildHeader(settings),
-            pw.SizedBox(height: 16),
+            pw.SizedBox(height: 12),
             pw.Center(
               child: pw.Text(
                 'SURAT PENAWARAN HARGA (SPH)',
-                style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+                style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold),
               ),
             ),
-            pw.SizedBox(height: 16),
+            pw.SizedBox(height: 12),
             _buildSphInfo(sph),
-            pw.SizedBox(height: 16),
+            pw.SizedBox(height: 12),
             _buildItemsTable(items),
             pw.SizedBox(height: 16),
             _buildTotals(sph),
             pw.SizedBox(height: 8),
-            pw.Text(
-              'Terbilang: ${NumberToWords.convert(sph.grandTotal.toInt())}',
-              style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(8),
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(color: PdfColors.grey400),
+              ),
+              child: pw.Text(
+                'Terbilang: ${NumberToWords.convert(sph.grandTotal.toInt())}',
+                style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+              ),
             ),
             pw.SizedBox(height: 24),
             _buildClosing(settings),
@@ -88,47 +95,74 @@ class PdfService {
   }
 
   static pw.Widget _buildHeader(CompanySettings settings) {
+    final headerChildren = <pw.Widget>[];
+
+    if (settings.logoPath != null && settings.logoPath!.isNotEmpty) {
+      final logoFile = File(settings.logoPath!);
+      if (logoFile.existsSync()) {
+        headerChildren.add(
+          pw.Container(
+            width: 80,
+            height: 80,
+            child: pw.Image(pw.MemoryImage(logoFile.readAsBytesSync())),
+          ),
+        );
+        headerChildren.add(pw.SizedBox(height: 8));
+      }
+    }
+
+    headerChildren.addAll([
+      pw.Text(
+        settings.companyName ?? 'Perusahaan Saya',
+        style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
+      ),
+      if (settings.address != null && settings.address!.isNotEmpty)
+        pw.Text(settings.address!, style: pw.TextStyle(fontSize: 9)),
+      if (settings.phone != null && settings.phone!.isNotEmpty)
+        pw.Text('Telp: ${settings.phone}', style: pw.TextStyle(fontSize: 9)),
+      if (settings.email != null && settings.email!.isNotEmpty)
+        pw.Text('Email: ${settings.email}', style: pw.TextStyle(fontSize: 9)),
+      if (settings.website != null && settings.website!.isNotEmpty)
+        pw.Text('Website: ${settings.website}', style: pw.TextStyle(fontSize: 9)),
+      if (settings.npwp != null && settings.npwp!.isNotEmpty)
+        pw.Text('NPWP: ${settings.npwp}', style: pw.TextStyle(fontSize: 9)),
+    ]);
+
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.Text(
-          settings.companyName ?? 'Perusahaan Saya',
-          style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
-        ),
-        if (settings.address != null && settings.address!.isNotEmpty)
-          pw.Text(settings.address!, style: pw.TextStyle(fontSize: 10)),
-        if (settings.phone != null && settings.phone!.isNotEmpty)
-          pw.Text('Telp: ${settings.phone}', style: pw.TextStyle(fontSize: 10)),
-        if (settings.email != null && settings.email!.isNotEmpty)
-          pw.Text('Email: ${settings.email}', style: pw.TextStyle(fontSize: 10)),
-      ],
+      children: headerChildren,
     );
   }
 
   static pw.Widget _buildSphInfo(Sph sph) {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.Row(
-          children: [
-            pw.Text('Nomor: ${sph.number}', style: pw.TextStyle(fontSize: 11)),
-            pw.Spacer(),
-            pw.Text('Tanggal: ${sph.date ?? ""}', style: pw.TextStyle(fontSize: 11)),
-          ],
-        ),
-        if (sph.title != null && sph.title!.isNotEmpty)
-          pw.Text('Perihal: ${sph.title}', style: pw.TextStyle(fontSize: 11)),
-        pw.SizedBox(height: 8),
-        pw.Text('Kepada Yth,', style: pw.TextStyle(fontSize: 11)),
-        pw.Text(sph.customerName ?? '-', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
-        if (sph.customerCompany != null && sph.customerCompany!.isNotEmpty)
-          pw.Text(sph.customerCompany!, style: pw.TextStyle(fontSize: 11)),
-        if (sph.customerAddress != null && sph.customerAddress!.isNotEmpty)
-          pw.Text(sph.customerAddress!, style: pw.TextStyle(fontSize: 11)),
-        pw.SizedBox(height: 8),
-        if (sph.notes != null && sph.notes!.isNotEmpty)
-          pw.Text('Catatan: ${sph.notes}', style: pw.TextStyle(fontSize: 10)),
-      ],
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(8),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: PdfColors.grey300),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Row(
+            children: [
+              pw.Text('Nomor: ${sph.number}', style: pw.TextStyle(fontSize: 10)),
+              pw.Spacer(),
+              pw.Text('Tanggal: ${sph.date ?? ""}', style: pw.TextStyle(fontSize: 10)),
+            ],
+          ),
+          if (sph.title != null && sph.title!.isNotEmpty)
+            pw.Text('Perihal: ${sph.title}', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 6),
+          pw.Text('Kepada Yth,', style: pw.TextStyle(fontSize: 10)),
+          pw.Text(sph.customerName ?? '-', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+          if (sph.customerCompany != null && sph.customerCompany!.isNotEmpty)
+            pw.Text(sph.customerCompany!, style: pw.TextStyle(fontSize: 10)),
+          if (sph.customerAddress != null && sph.customerAddress!.isNotEmpty)
+            pw.Text(sph.customerAddress!, style: pw.TextStyle(fontSize: 10)),
+          if (sph.shipName != null && sph.shipName!.isNotEmpty)
+            pw.Text('Nama Kapal: ${sph.shipName}', style: pw.TextStyle(fontSize: 10)),
+        ],
+      ),
     );
   }
 
@@ -138,16 +172,20 @@ class PdfService {
     }
 
     final headers = ['No', 'Uraian Pekerjaan', 'Qty', 'Sat', 'Harga Satuan', 'Material', 'Jasa', 'Jumlah'];
+    final colWidths = <double>[20, 220, 30, 25, 55, 55, 55, 55];
 
     return pw.Table(
-      border: pw.TableBorder.all(),
+      border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
+      columnWidths: {
+        for (int i = 0; i < colWidths.length; i++) i: pw.FixedColumnWidth(colWidths[i]),
+      },
       children: [
         pw.TableRow(
+          decoration: pw.BoxDecoration(color: PdfColors.grey300),
           children: headers.map((h) {
             return pw.Container(
-              padding: const pw.EdgeInsets.all(4),
-              color: PdfColors.grey300,
-              child: pw.Text(h, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+              padding: const pw.EdgeInsets.all(3),
+              child: pw.Text(h, style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold)),
             );
           }).toList(),
         ),
@@ -164,26 +202,48 @@ class PdfService {
             }
             final isSection = item.type == 'section';
             final number = isSection ? _pdfToRoman(sectionCount) : '';
-            final label = isSection ? item.label : '${_pdfToLetter(itemCount - 1)}. ${item.label}';
+            final label = isSection
+                ? '${_pdfToRoman(sectionCount)}. ${item.label}'
+                : '${_pdfToLetter(itemCount - 1)}. ${item.label}';
             rows.add(pw.TableRow(
               children: [
-                pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Text(number, style: pw.TextStyle(fontSize: 8))),
+                pw.Container(padding: const pw.EdgeInsets.all(3), child: pw.Text(number, style: pw.TextStyle(fontSize: 7))),
                 pw.Container(
-                  padding: const pw.EdgeInsets.all(4),
+                  padding: const pw.EdgeInsets.all(3),
                   child: pw.Text(
                     label,
                     style: pw.TextStyle(
-                      fontSize: 8,
-                      fontWeight: item.type == 'section' ? pw.FontWeight.bold : pw.FontWeight.normal,
+                      fontSize: 7,
+                      fontWeight: isSection ? pw.FontWeight.bold : pw.FontWeight.normal,
                     ),
                   ),
                 ),
-                pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Text(item.type == 'item' ? '${item.qty}' : '', style: pw.TextStyle(fontSize: 8))),
-                pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Text(item.unit ?? '', style: pw.TextStyle(fontSize: 8))),
-                pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Text(item.type == 'item' ? Helpers.formatCurrency(item.unitPrice) : '', style: pw.TextStyle(fontSize: 8))),
-                pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Text(item.type == 'item' ? Helpers.formatCurrency(item.materialPrice * item.qty) : '', style: pw.TextStyle(fontSize: 8))),
-                pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Text(item.type == 'item' ? Helpers.formatCurrency(item.jasaPrice * item.qty) : '', style: pw.TextStyle(fontSize: 8))),
-                pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Text(item.type == 'item' ? Helpers.formatCurrency(item.totalPrice) : '', style: pw.TextStyle(fontSize: 8))),
+                pw.Container(padding: const pw.EdgeInsets.all(3), child: pw.Text(
+                  item.type == 'item' ? '${item.qty}' : '',
+                  style: pw.TextStyle(fontSize: 7),
+                  textAlign: pw.TextAlign.right,
+                )),
+                pw.Container(padding: const pw.EdgeInsets.all(3), child: pw.Text(item.unit ?? '', style: pw.TextStyle(fontSize: 7))),
+                pw.Container(padding: const pw.EdgeInsets.all(3), child: pw.Text(
+                  item.type == 'item' ? Helpers.formatCurrency(item.unitPrice) : '',
+                  style: pw.TextStyle(fontSize: 7),
+                  textAlign: pw.TextAlign.right,
+                )),
+                pw.Container(padding: const pw.EdgeInsets.all(3), child: pw.Text(
+                  item.type == 'item' ? Helpers.formatCurrency(item.materialPrice * item.qty) : '',
+                  style: pw.TextStyle(fontSize: 7),
+                  textAlign: pw.TextAlign.right,
+                )),
+                pw.Container(padding: const pw.EdgeInsets.all(3), child: pw.Text(
+                  item.type == 'item' ? Helpers.formatCurrency(item.jasaPrice * item.qty) : '',
+                  style: pw.TextStyle(fontSize: 7),
+                  textAlign: pw.TextAlign.right,
+                )),
+                pw.Container(padding: const pw.EdgeInsets.all(3), child: pw.Text(
+                  item.type == 'item' ? Helpers.formatCurrency(item.totalPrice) : '',
+                  style: pw.TextStyle(fontSize: 7),
+                  textAlign: pw.TextAlign.right,
+                )),
               ],
             ));
           }
@@ -203,24 +263,34 @@ class PdfService {
         _totalRow('Diskon', '${sph.discount}%'),
         _totalRow('PPN', '${sph.ppn}%'),
         pw.SizedBox(height: 4),
-        pw.Row(
-          mainAxisAlignment: pw.MainAxisAlignment.end,
-          children: [
-            pw.Text('Grand Total: ', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
-            pw.Text(Helpers.formatCurrency(sph.grandTotal), style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
-          ],
+        pw.Container(
+          padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: pw.BoxDecoration(
+            border: pw.Border.all(color: PdfColors.grey600),
+            color: PdfColors.grey100,
+          ),
+          child: pw.Row(
+            mainAxisSize: pw.MainAxisSize.min,
+            children: [
+              pw.Text('Grand Total: ', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+              pw.Text(Helpers.formatCurrency(sph.grandTotal), style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+            ],
+          ),
         ),
       ],
     );
   }
 
   static pw.Widget _totalRow(String label, String value) {
-    return pw.Row(
-      mainAxisAlignment: pw.MainAxisAlignment.end,
-      children: [
-        pw.Text('$label: ', style: pw.TextStyle(fontSize: 10)),
-        pw.Text(value, style: pw.TextStyle(fontSize: 10)),
-      ],
+    return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(vertical: 1),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.end,
+        children: [
+          pw.Text('$label: ', style: pw.TextStyle(fontSize: 9)),
+          pw.Text(value, style: pw.TextStyle(fontSize: 9)),
+        ],
+      ),
     );
   }
 
@@ -228,13 +298,18 @@ class PdfService {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.end,
       children: [
-        pw.Text('Demikian penawaran ini kami sampaikan.', style: pw.TextStyle(fontSize: 10)),
-        pw.Text('Atas perhatian dan kerjasamanya, kami ucapkan terima kasih.', style: pw.TextStyle(fontSize: 10)),
+        if (settings.notes != null && settings.notes!.isNotEmpty)
+          pw.Padding(
+            padding: const pw.EdgeInsets.only(bottom: 16),
+            child: pw.Text(settings.notes!, style: pw.TextStyle(fontSize: 9, fontStyle: pw.FontStyle.italic)),
+          ),
+        pw.Text('Demikian penawaran ini kami sampaikan.', style: pw.TextStyle(fontSize: 9)),
+        pw.Text('Atas perhatian dan kerjasamanya, kami ucapkan terima kasih.', style: pw.TextStyle(fontSize: 9)),
         pw.SizedBox(height: 24),
         pw.Text(settings.companyName ?? '', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
         pw.SizedBox(height: 40),
-        pw.Text('( ____________________ )', style: pw.TextStyle(fontSize: 10)),
-        pw.Text('Direktur', style: pw.TextStyle(fontSize: 10)),
+        pw.Text('( ${settings.signatureName ?? "____________________"} )', style: pw.TextStyle(fontSize: 10)),
+        pw.Text(settings.signaturePosition ?? 'Direktur', style: pw.TextStyle(fontSize: 9)),
       ],
     );
   }
