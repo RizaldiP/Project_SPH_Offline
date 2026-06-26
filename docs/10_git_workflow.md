@@ -79,9 +79,9 @@ Aturan:
 ## 4. Workflow Harian
 
 ```bash
-# 1. Update branch develop
-git checkout develop
-git pull origin develop
+# 1. Update branch master
+git checkout master
+git pull origin master
 
 # 2. Buat branch fitur
 git checkout -b feature/nama-fitur
@@ -93,7 +93,7 @@ git commit -m "feat: add customer CRUD"
 # 4. Push ke remote
 git push origin feature/nama-fitur
 
-# 5. Buat Pull Request ke develop (via GitHub)
+# 5. Buat Pull Request ke master (via GitHub)
 ```
 
 ---
