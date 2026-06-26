@@ -56,10 +56,6 @@ class PdfService {
             _buildHeader(settings),
             pw.SizedBox(height: 10),
             _buildTitle(),
-            if (sph.title != null && sph.title!.isNotEmpty) ...[
-              pw.SizedBox(height: 6),
-              _buildPerihal(sph.title!),
-            ],
             pw.SizedBox(height: 8),
             _buildSphInfo(sph),
             pw.SizedBox(height: 12),
@@ -148,22 +144,6 @@ class PdfService {
     );
   }
 
-  static pw.Widget _buildPerihal(String title) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-      child: pw.Center(
-        child: pw.Text(
-          title,
-          style: pw.TextStyle(
-            fontSize: 13,
-            fontWeight: pw.FontWeight.bold,
-            color: _steelBlue,
-          ),
-        ),
-      ),
-    );
-  }
-
   static pw.Widget _buildSphInfo(Sph sph) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(8),
@@ -210,9 +190,19 @@ class PdfService {
               ),
             ],
           ),
-          if (sph.shipName != null && sph.shipName!.isNotEmpty)
-            pw.Text('Nama Kapal: ${sph.shipName}',
-                style: const pw.TextStyle(fontSize: 10)),
+          if (sph.title != null && sph.title!.isNotEmpty) ...[
+            pw.SizedBox(height: 6),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(4),
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(color: _steelBlueLight),
+              ),
+              child: pw.Text(
+                '${sph.title}${sph.shipName != null && sph.shipName!.isNotEmpty ? ' ${sph.shipName}' : ''}',
+                style: const pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+              ),
+            ),
+          ],
           if (sph.validityPeriod != null && sph.validityPeriod!.isNotEmpty)
             pw.Text('Masa Berlaku: ${sph.validityPeriod}',
                 style: const pw.TextStyle(fontSize: 10)),
@@ -347,11 +337,10 @@ class PdfService {
       pw.TableRow(
         decoration: pw.BoxDecoration(color: _lightBlue),
         children: [
-          _boldCell('Sub Total'),
-          _emptyCell(),
-          _emptyCell(),
-          _emptyCell(),
-          _emptyCell(),
+          pw.TableCell(
+            columnSpan: 5,
+            child: _boldCell('Sub Total'),
+          ),
           _boldRightCell(Helpers.formatCurrency(sph.totalMaterial)),
           _boldRightCell(Helpers.formatCurrency(sph.totalJasa)),
           _boldRightCell(Helpers.formatCurrency(subtotal)),
@@ -359,26 +348,20 @@ class PdfService {
       ),
       pw.TableRow(
         children: [
-          _boldCell('PPN'),
-          _emptyCell(),
-          _emptyCell(),
-          _emptyCell(),
-          _emptyCell(),
-          _emptyCell(),
-          _emptyCell(),
+          pw.TableCell(
+            columnSpan: 7,
+            child: _boldCell('PPN'),
+          ),
           _boldRightCell(Helpers.formatCurrency(ppnAmount)),
         ],
       ),
       pw.TableRow(
         decoration: pw.BoxDecoration(color: _lightBlue),
         children: [
-          _boldCell('Total'),
-          _emptyCell(),
-          _emptyCell(),
-          _emptyCell(),
-          _emptyCell(),
-          _emptyCell(),
-          _emptyCell(),
+          pw.TableCell(
+            columnSpan: 7,
+            child: _boldCell('Total'),
+          ),
           _boldRightCell(Helpers.formatCurrency(grandTotal)),
         ],
       ),
@@ -402,10 +385,6 @@ class PdfService {
               fontSize: 7.5, fontWeight: pw.FontWeight.bold),
           textAlign: pw.TextAlign.right),
     );
-  }
-
-  static pw.Widget _emptyCell() {
-    return pw.Container(padding: const pw.EdgeInsets.all(3));
   }
 
   static pw.Widget _cell(String text,
@@ -452,15 +431,7 @@ class PdfService {
                   fontSize: 9, fontStyle: pw.FontStyle.italic),
             ),
           ),
-        pw.Text(
-          'Demikian penawaran ini kami sampaikan.',
-          style: pw.TextStyle(fontSize: 9),
-        ),
-        pw.Text(
-          'Atas perhatian dan kerjasamanya, kami ucapkan terima kasih.',
-          style: pw.TextStyle(fontSize: 9),
-        ),
-        pw.SizedBox(height: 24),
+        pw.SizedBox(height: 16),
         pw.Text(
           settings.companyName ?? '',
           style: const pw.TextStyle(
