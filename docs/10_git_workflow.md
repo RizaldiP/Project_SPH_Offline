@@ -7,21 +7,21 @@ Standar alur Git & GitHub untuk pengembangan **SPH Generator Mobile Offline**.
 ## 1. Branching Strategy
 
 ```
-main ──┬── develop ──┬── feature/nama-fitur
+master ──┬── develop ──┬── feature/nama-fitur
        │              ├── fix/nama-bug
        │              └── refactor/nama
        │
-       └── hotfix/nama-fix (langsung dari main untuk urgent)
+       └── hotfix/nama-fix (langsung dari master untuk urgent)
 ```
 
 | Branch | Base | Tujuan |
 |--------|------|--------|
-| `main` | — | Produksi (stable) |
-| `develop` | `main` | Integrasi fitur |
+| `master` | — | Produksi (stable) |
+| `develop` | `master` | Integrasi fitur |
 | `feature/*` | `develop` | Fitur baru |
 | `fix/*` | `develop` | Perbaikan bug |
 | `refactor/*` | `develop` | Refactoring kode |
-| `hotfix/*` | `main` | Fix urgent produksi |
+| `hotfix/*` | `master` | Fix urgent produksi |
 
 ---
 
@@ -124,15 +124,15 @@ feat: add customer CRUD
 ### Review Rules
 - Minimal 1 approval sebelum merge ke `develop`.
 - Jangan self-merge.
-- PR ke `main` harus dari `develop` yang sudah di-test.
+- PR ke `master` harus dari `develop` yang sudah di-test.
 
 ---
 
 ## 6. Merge Strategy
 
 - **Feature → Develop**: `Squash & Merge` (1 commit per fitur).
-- **Develop → Main**: `Merge Commit` (history tetap utuh).
-- **Hotfix → Main**: `Squash & Merge`.
+- **Develop → Master**: `Merge Commit` (history tetap utuh).
+- **Hotfix → Master**: `Squash & Merge`.
 
 ---
 
