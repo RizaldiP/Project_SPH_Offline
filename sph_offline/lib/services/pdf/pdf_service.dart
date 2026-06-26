@@ -56,14 +56,16 @@ class PdfService {
             _buildHeader(settings),
             pw.SizedBox(height: 10),
             _buildTitle(),
+            if (sph.title != null && sph.title!.isNotEmpty) ...[
+              pw.SizedBox(height: 6),
+              _buildPerihal(sph.title!),
+            ],
             pw.SizedBox(height: 8),
             _buildSphInfo(sph),
             pw.SizedBox(height: 12),
-            _buildItemsTable(items),
+            _buildItemsTable(items, sph),
             pw.SizedBox(height: 8),
             _buildTerbilang(sph),
-            pw.SizedBox(height: 10),
-            _buildTotals(sph),
             pw.SizedBox(height: 20),
             _buildClosing(settings),
           ],
@@ -146,6 +148,22 @@ class PdfService {
     );
   }
 
+  static pw.Widget _buildPerihal(String title) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      child: pw.Center(
+        child: pw.Text(
+          title,
+          style: pw.TextStyle(
+            fontSize: 13,
+            fontWeight: pw.FontWeight.bold,
+            color: _steelBlue,
+          ),
+        ),
+      ),
+    );
+  }
+
   static pw.Widget _buildSphInfo(Sph sph) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(8),
@@ -165,10 +183,6 @@ class PdfService {
                   style: const pw.TextStyle(fontSize: 10)),
             ],
           ),
-          if (sph.title != null && sph.title!.isNotEmpty)
-            pw.Text('Perihal: ${sph.title}',
-                style: const pw.TextStyle(
-                    fontSize: 10, fontWeight: pw.FontWeight.bold)),
           pw.SizedBox(height: 6),
           pw.Row(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -207,7 +221,7 @@ class PdfService {
     );
   }
 
-  static pw.Widget _buildItemsTable(List<SphItem> items) {
+  static pw.Widget _buildItemsTable(List<SphItem> items, Sph sph) {
     if (items.isEmpty) {
       return pw.Text('Tidak ada item pekerjaan');
     }
@@ -223,21 +237,23 @@ class PdfService {
       'Jumlah'
     ];
 
+    final colWidths = const {
+      0: pw.FixedColumnWidth(22),
+      1: pw.FlexColumnWidth(),
+      2: pw.FixedColumnWidth(26),
+      3: pw.FixedColumnWidth(24),
+      4: pw.FixedColumnWidth(60),
+      5: pw.FixedColumnWidth(60),
+      6: pw.FixedColumnWidth(60),
+      7: pw.FixedColumnWidth(60),
+    };
+
     return pw.Table(
       border: pw.TableBorder.all(
         color: PdfColors.grey400,
         width: 0.5,
       ),
-      columnWidths: const {
-        0: pw.FixedColumnWidth(22),
-        1: pw.FlexColumnWidth(),
-        2: pw.FixedColumnWidth(26),
-        3: pw.FixedColumnWidth(24),
-        4: pw.FixedColumnWidth(60),
-        5: pw.FixedColumnWidth(60),
-        6: pw.FixedColumnWidth(60),
-        7: pw.FixedColumnWidth(60),
-      },
+      columnWidths: colWidths,
       children: [
         pw.TableRow(
           decoration: pw.BoxDecoration(color: _steelBlue),
@@ -270,14 +286,18 @@ class PdfService {
             final isSection = item.type == 'section';
             final number =
                 isSection ? _roman(sectionCount) : _letter(itemCount - 1);
+            final label = isSection
+                ? item.label
+                : '${_letter(itemCount - 1)}. ${item.label}';
 
             rows.add(pw.TableRow(
               decoration: isSection
                   ? pw.BoxDecoration(color: _lightBlue)
                   : null,
               children: [
-                _cell(number, isSection: true),
-                _cell(item.label,
+                _cell(isSection ? number : '',
+                    isSection: isSection),
+                _cell(label,
                     isSection: isSection,
                     fontWeight:
                         isSection ? pw.FontWeight.bold : pw.FontWeight.normal),
@@ -313,8 +333,79 @@ class PdfService {
           }
           return rows;
         }(),
+        ..._buildSummaryRows(sph),
       ],
     );
+  }
+
+  static List<pw.TableRow> _buildSummaryRows(Sph sph) {
+    final subtotal = sph.totalMaterial + sph.totalJasa;
+    final ppnAmount = ((11 / 12 * subtotal) * 12 / 100).round();
+    final grandTotal = subtotal + ppnAmount;
+
+    return [
+      pw.TableRow(
+        decoration: pw.BoxDecoration(color: _lightBlue),
+        children: [
+          _boldCell('Sub Total'),
+          _emptyCell(),
+          _emptyCell(),
+          _emptyCell(),
+          _emptyCell(),
+          _boldRightCell(Helpers.formatCurrency(sph.totalMaterial)),
+          _boldRightCell(Helpers.formatCurrency(sph.totalJasa)),
+          _boldRightCell(Helpers.formatCurrency(subtotal)),
+        ],
+      ),
+      pw.TableRow(
+        children: [
+          _boldCell('PPN'),
+          _emptyCell(),
+          _emptyCell(),
+          _emptyCell(),
+          _emptyCell(),
+          _emptyCell(),
+          _emptyCell(),
+          _boldRightCell(Helpers.formatCurrency(ppnAmount)),
+        ],
+      ),
+      pw.TableRow(
+        decoration: pw.BoxDecoration(color: _lightBlue),
+        children: [
+          _boldCell('Total'),
+          _emptyCell(),
+          _emptyCell(),
+          _emptyCell(),
+          _emptyCell(),
+          _emptyCell(),
+          _emptyCell(),
+          _boldRightCell(Helpers.formatCurrency(grandTotal)),
+        ],
+      ),
+    ];
+  }
+
+  static pw.Widget _boldCell(String text) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(3),
+      child: pw.Text(text,
+          style: const pw.TextStyle(
+              fontSize: 7.5, fontWeight: pw.FontWeight.bold)),
+    );
+  }
+
+  static pw.Widget _boldRightCell(String text) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(3),
+      child: pw.Text(text,
+          style: const pw.TextStyle(
+              fontSize: 7.5, fontWeight: pw.FontWeight.bold),
+          textAlign: pw.TextAlign.right),
+    );
+  }
+
+  static pw.Widget _emptyCell() {
+    return pw.Container(padding: const pw.EdgeInsets.all(3));
   }
 
   static pw.Widget _cell(String text,
@@ -330,70 +421,6 @@ class PdfService {
           fontWeight: fontWeight,
         ),
         textAlign: align,
-      ),
-    );
-  }
-
-  static pw.Widget _buildTotals(Sph sph) {
-    return pw.Container(
-      alignment: pw.Alignment.centerRight,
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.end,
-        children: [
-          _totalRow('Total Material', Helpers.formatCurrency(sph.totalMaterial)),
-          _totalRow('Total Jasa', Helpers.formatCurrency(sph.totalJasa)),
-          _totalRow('Subtotal', Helpers.formatCurrency(sph.subtotal)),
-          _totalRow('Diskon', '${sph.discount}%'),
-          _totalRow('PPN', '${sph.ppn}%'),
-          pw.SizedBox(height: 4),
-          pw.Container(
-            padding:
-                const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: pw.BoxDecoration(
-              border: pw.Border(
-                top: const pw.BorderSide(color: _steelBlue, width: 2),
-                bottom: const pw.BorderSide(color: _steelBlue, width: 2),
-                left: const pw.BorderSide(color: _steelBlue, width: 1),
-                right: const pw.BorderSide(color: _steelBlue, width: 1),
-              ),
-              color: _lightBlue,
-            ),
-            child: pw.Row(
-              mainAxisSize: pw.MainAxisSize.min,
-              children: [
-                pw.Text(
-                  'Grand Total: ',
-                  style: pw.TextStyle(
-                    fontSize: 11,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-                pw.Text(
-                  Helpers.formatCurrency(sph.grandTotal),
-                  style: pw.TextStyle(
-                    fontSize: 11,
-                    fontWeight: pw.FontWeight.bold,
-                    color: _steelBlue,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  static pw.Widget _totalRow(String label, String value) {
-    return pw.Container(
-      width: 280,
-      padding: const pw.EdgeInsets.symmetric(vertical: 1.5),
-      child: pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-        children: [
-          pw.Text(label, style: const pw.TextStyle(fontSize: 9)),
-          pw.Text(value, style: const pw.TextStyle(fontSize: 9)),
-        ],
       ),
     );
   }
