@@ -1,0 +1,38 @@
+# Flutter/Dart
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+*.class
+*.log
+*.pyc
+*.swp
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Android
+*.jks
+*.keystore
+local.properties
+android/app/debug/
+android/app/profile/
+android/app/release/
+
+# Project specific
+*.db
+*.db-shm
+*.db-wal
+migrate_working_dir/
